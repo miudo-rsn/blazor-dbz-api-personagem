@@ -1,0 +1,92 @@
+@page "/"
+@inject HttpClient Http
+
+<PageTitle>Dragon Ball</PageTitle>
+
+<h1>Informações do Personagem</h1>
+
+<div class="mb-3 mt-3">
+    <label class="me-2">Digite o id do personagem:</label>
+    <input type="number" min="1" @bind="id" />
+    <button class="btn btn-primary btn-sm ms-2" @onclick="BuscarPersonagem">Buscar</button>
+</div>
+
+@if (carregando)
+{
+    <p>Carregando...</p>
+}
+else if (!string.IsNullOrEmpty(erro))
+{
+    <p style="color: red;">@erro</p>
+}
+else if (personagem != null)
+{
+    <p><strong>Nome:</strong> @personagem.Name</p>
+    <p><strong>Planeta de Origem:</strong> @personagem.OriginPlanet?.Name</p>
+
+    <h3>Transformações:</h3>
+
+    @if (personagem.Transformations != null && personagem.Transformations.Count > 0)
+    {
+        <ul>
+            @foreach (var t in personagem.Transformations)
+            {
+                <li>@t.Name</li>
+            }
+        </ul>
+    }
+    else
+    {
+        <p>Esse personagem não tem transformações.</p>
+    }
+}
+
+@code {
+    private int id = 1;
+    private Personagem? personagem;
+    private string erro = "";
+    private bool carregando = false;
+
+    private async Task BuscarPersonagem()
+    {
+        carregando = true;
+        erro = "";
+        personagem = null;
+
+        try
+        {
+            var url = $"https://dragonball-api.com/api/characters/{id}";
+            personagem = await Http.GetFromJsonAsync<Personagem>(url);
+        }
+        catch (HttpRequestException)
+        {
+            erro = "Não foi possível encontrar esse personagem. Tente outro id.";
+        }
+        catch (Exception ex)
+        {
+            erro = "Deu algum problema: " + ex.Message;
+        }
+
+        carregando = false;
+    }
+
+    public class Personagem
+    {
+        public int Id { get; set; }
+        public string? Name { get; set; }
+        public Planeta? OriginPlanet { get; set; }
+        public List<Transformacao>? Transformations { get; set; }
+    }
+
+    public class Planeta
+    {
+        public int Id { get; set; }
+        public string? Name { get; set; }
+    }
+
+    public class Transformacao
+    {
+        public int Id { get; set; }
+        public string? Name { get; set; }
+    }
+}
